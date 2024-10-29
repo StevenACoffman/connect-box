@@ -1,0 +1,16 @@
+version: v2
+lint:
+  use:
+    - BASIC
+    - RPC_PASCAL_CASE
+    - ENUM_PASCAL_CASE
+    - MESSAGE_PASCAL_CASE
+    - SERVICE_PASCAL_CASE
+  except:
+    - ENUM_VALUE_UPPER_SNAKE_CASE
+    - FIELD_LOWER_SNAKE_CASE
+    - ONEOF_LOWER_SNAKE_CASE
+    - PACKAGE_LOWER_SNAKE_CASE
+breaking:
+  use:
+    - FILE

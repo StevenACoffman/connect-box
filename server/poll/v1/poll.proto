@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+package server.poll.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/Khan/hackathon-khanmigogo/server/poll/v1";;
+
+message Answer {
+  string answer = 1;
+  bool correct = 2;
+  bool lie = 3;
+}
+
+message QuestionAndAnswers {
+  string Question = 1;
+  repeated Answer Answers = 2;
+}
+
+message GameRoomCreateEventMessage {
+  string RoomCode = 1;
+  string Game = 2;
+  repeated QuestionAndAnswers QuestionsAndAnswers = 3;
+  string TimedDuration = 4;
+  string Error = 5;
+}
+
+message StartVotingEventMessage {
+  string RoomCode = 1;
+  string Game = 2;
+  repeated string Participants = 3;
+  repeated string AudienceList = 4;
+  bool VotingClosed = 5;
+  bool VotingStarted = 6;
+  google.protobuf.Timestamp VotingStartTime = 7;
+  google.protobuf.Timestamp VotingEndTime = 8;
+  string TimedDuration = 9;
+}
+
+message ParticipantAudienceJoinEventMessage {
+  string RoomCode = 1;
+  string Game = 2;
+  string Nickname = 3;
+  bool Participant = 4;
+  bool Audience = 5;
+  string Error = 6;
+}
+
+message Vote {
+  uint32 QuestionNumber = 1;
+  repeated uint32 ParticipantAnswers = 2;
+  string ParticipantName = 3;
+  string ParticipantHat = 4;
+}
+
+message ParticipantVoteEventMessage {
+  string RoomCode = 1;
+  string Game = 2;
+  Vote Vote = 3;
+  string Error = 4;
+}
+
+message SubscribeRequestMessage {
+  string RoomCode = 1;
+  string Game = 2;
+  string Nickname = 3;
+  bool Participant = 4;
+  bool Audience = 5;
+  string Error = 6;
+}
+
+message UpdateResultsMessage {
+  string RoomCode = 1;
+  string Game = 2;
+  repeated Vote Votes = 3;
+  repeated string Participants = 4;
+  repeated string AudienceList = 5;
+  repeated QuestionAndAnswers QuestionsAndAnswers = 6;
+  bool VotingClosed = 7;
+  bool VotingStarted = 8;
+  google.protobuf.Timestamp VotingStartTime = 9;
+  google.protobuf.Timestamp VotingEndTime = 10;
+  string TimedDuration = 11;
+  string DurationRemaining = 12;
+  string Error = 13;
+}
+
+message EndVotingEventMessage {
+  string RoomCode = 1;
+  string Game = 2;
+  bool VotingClosed = 3;
+  google.protobuf.Timestamp VotingEndTime = 4;
+}
+
+message ParticipantAudienceJoinResponse {
+  UpdateResultsMessage updateResultsMessage = 1;
+}
+
+message ParticipantVoteResponse {
+  UpdateResultsMessage updateResultsMessage = 1;
+}
+
+message GameRoomCreateResponse {
+  UpdateResultsMessage updateResultsMessage = 1;
+}
+
+message StartVotingResponse {
+  UpdateResultsMessage updateResultsMessage = 1;
+}
+
+message EndVotingResponse {
+  UpdateResultsMessage updateResultsMessage = 1;
+}
+
+message SubscribeResponse {
+  UpdateResultsMessage updateResultsMessage = 1;
+}
+
+service PollService {
+  rpc ParticipantAudienceJoinRequest(ParticipantAudienceJoinEventMessage) returns (stream ParticipantAudienceJoinResponse);
+  rpc ParticipantVoteRequest(ParticipantVoteEventMessage) returns (ParticipantVoteResponse);
+  rpc GameRoomCreateRequest(GameRoomCreateEventMessage) returns (stream GameRoomCreateResponse);
+  rpc StartVotingRequest(StartVotingEventMessage) returns (StartVotingResponse);
+  rpc EndVotingRequest(EndVotingEventMessage) returns (EndVotingResponse);
+  rpc SubscribeRequest(SubscribeRequestMessage) returns (stream SubscribeResponse);
+}
