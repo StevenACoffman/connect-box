@@ -8,7 +8,7 @@ import { QuestionBox } from "../shared/question-box";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { GameStateContext } from "../game-state-provider";
 import { useClient } from "../useClient";
-import { PollService } from "../proto/server/poll/v1/poll_connect";
+import { PollService } from "../proto/server/poll/v1/poll_pb";
 import { EndVotingEventMessage } from "../proto/server/poll/v1/poll_pb";
 import { useNavigate } from "react-router-dom";
 import { ErrorMessage } from "../shared/error-message";

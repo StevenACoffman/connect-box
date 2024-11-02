@@ -14,6 +14,7 @@ type StreamSender interface {
 	GetNickName() string
 	Sendable() bool
 	End(err error)
+	ErrChan() <-chan error
 }
 
 type CommonSession struct {
@@ -24,6 +25,7 @@ type CommonSession struct {
 	IsAudience    bool
 	IsHost        bool
 	IsActive      bool
+	statusChan    chan *v1.UpdateResultsMessage
 	errChan       chan error
 }
 
@@ -42,6 +44,10 @@ type SubscribeSession struct {
 	CommonSession
 }
 
+func (session *CommonSession) ErrChan() <-chan error {
+	return session.errChan
+}
+
 func (session *CommonSession) GetNickName() string {
 	if session.IsHost {
 		return "Host"
@@ -50,7 +56,12 @@ func (session *CommonSession) GetNickName() string {
 }
 
 func (session *CommonSession) End(err error) {
+	if !session.IsActive {
+		// do not end twice
+		return
+	}
 	session.IsActive = false
+	// blocks until next session tick!
 	session.errChan <- err
 }
 

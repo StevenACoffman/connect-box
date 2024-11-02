@@ -7,12 +7,12 @@ plugins:
       - target=ts
       - import_extension=none
   # This will invoke protoc-gen-connect-es
-  - local: protoc-gen-connect-es
-    out: ui/src/proto
-    # Add more plugin options here
-    opt:
-      - target=ts
-      - import_extension=none
+#  - local: protoc-gen-connect-es
+#    out: ui/src/proto
+#    # Add more plugin options here
+#    opt:
+#      - target=ts
+#      - import_extension=none
   - local: protoc-gen-go
     out: .
     opt: paths=source_relative

@@ -5,13 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"connectrpc.com/connect"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1 "github.com/Khan/hackathon-khanmigogo/server/poll/v1"
 	pb "github.com/Khan/hackathon-khanmigogo/server/poll/v1/v1connect"
@@ -19,8 +16,9 @@ import (
 
 type PollServer struct {
 	pb.UnimplementedPollServiceHandler
-	Rooms map[string]*Room
-	mu    sync.RWMutex
+	Rooms       map[string]*Room
+	mu          sync.RWMutex
+	StreamDelay time.Duration // sleep between streaming response messages
 }
 
 func (ps *PollServer) GameRoomCreateRequest(
@@ -29,11 +27,13 @@ func (ps *PollServer) GameRoomCreateRequest(
 	stream *connect.ServerStream[v1.GameRoomCreateResponse],
 ) error {
 	fmt.Println("Got GameRoomCreateRequest", jsonify(req.Msg))
-
+	fmt.Println(ctx.Deadline())
 	// TODO(steve): Randomly generate but avoid collisions
 	roomCode := IntToLetters(getRandRoomNumber())
-	cancellableCtx, cancelFn := context.WithCancel(ctx)
-
+	cancellableCtx, cancelFn := context.WithCancelCause(ctx)
+	if ps.StreamDelay <= 0 {
+		return fmt.Errorf("StreamDelay must be > 0")
+	}
 	fmt.Println("RoomCode", roomCode)
 	// check if room is already occupied
 	for {
@@ -75,30 +75,16 @@ func (ps *PollServer) GameRoomCreateRequest(
 			TimedDuration:       req.Msg.TimedDuration,
 			DurationRemaining:   req.Msg.TimedDuration,
 		},
-		Cancel:   cancelFn,
-		Sessions: []StreamSender{session},
+		Cancel:      cancelFn,
+		Sessions:    []StreamSender{session},
+		StreamDelay: time.Duration(ps.StreamDelay),
 	}
 	ps.mu.Unlock()
-	log.Printf("Sending initial message to Host from %v\n", roomCode)
+	log.Printf("Starting room ticker for %v\n", roomCode)
 	room := ps.Rooms[roomCode]
-	hasActive := room.UpdateAllSessions()
-	if !hasActive {
-		fmt.Println(
-			"Tried to UpdateAllSessions with ParticipantVoteResponse but no active connections",
-		)
-	}
-
-	// this will update hosts and participants every second
 	go room.RoomTicker(cancellableCtx)
-	log.Printf("Waiting on done or session errors")
-	select {
-	case <-ctx.Done():
-		log.Println(room.Status.RoomCode, " Host session cancelled")
-		return nil
-	case err := <-session.errChan:
-		log.Println(room.Status.RoomCode, " Host session got errChan ", err)
-		return err
-	}
+	log.Printf("Sending periodic message to Host from %v\n", roomCode)
+	return room.SendPeriodicUpdates(cancellableCtx, session)
 }
 
 // jsonify just makes indented json out of anything
@@ -119,15 +105,20 @@ func (ps *PollServer) ParticipantAudienceJoinRequest(
 	roomCode := req.Msg.RoomCode
 	fmt.Println("Got ParticipantAudienceJoinRequest", roomCode, nickname)
 
-	room := ps.Rooms[roomCode]
+	room, ok := ps.Rooms[roomCode]
+	if !ok {
+		return fmt.Errorf("room %s not in use so can't join it", roomCode)
+	}
+	isParticipant := req.Msg.Participant
+	isAudience := req.Msg.Audience
 	session := &UserSession{
 		Stream: stream,
 		CommonSession: CommonSession{
 			NickName:      nickname,
 			RoomCode:      roomCode,
 			Game:          room.Status.Game,
-			IsAudience:    req.Msg.Audience,
-			IsParticipant: req.Msg.Participant,
+			IsAudience:    isAudience,
+			IsParticipant: isParticipant,
 			IsHost:        false,
 			IsActive:      true,
 			errChan:       make(chan error),
@@ -135,43 +126,10 @@ func (ps *PollServer) ParticipantAudienceJoinRequest(
 	}
 	fmt.Println("Session:\n" + jsonify(session.CommonSession))
 
-	room.mu.Lock()
-	room.Sessions = append(room.Sessions, session)
-	for i := range room.Sessions {
-		fmt.Println("Session", i, room.Sessions[i].GetNickName())
-	}
-	fmt.Println("RoomUserSessionLen:", len(ps.Rooms[roomCode].Sessions))
-	if req.Msg.Participant {
-		participants := room.Status.Participants
+	room.JoinRoom(session, nickname, isParticipant, isAudience)
+	log.Printf("User %s joined room %s\n", session.NickName, roomCode)
 
-		participants = append(participants, nickname)
-		fmt.Println("for room:", room.Status.RoomCode, "new participants:", participants)
-		room.Status.Participants = participants
-	} else if req.Msg.Audience {
-		ps.Rooms[session.RoomCode].Status.AudienceList = append(
-			ps.Rooms[session.RoomCode].Status.AudienceList, nickname)
-	}
-	room.mu.Unlock()
-	log.Printf("User %s joined room %s", session.NickName, roomCode)
-
-	// do we want to immediately inform everyone someone joined,
-	// or wait for tick?
-	hasActive := room.UpdateAllSessions()
-	if !hasActive {
-		fmt.Println(
-			"Tried to UpdateAllSessions with ParticipantVoteResponse but no active connections",
-		)
-	}
-
-	log.Printf("Waiting on done or session errors")
-	select {
-	case <-ctx.Done():
-		log.Println(room.Status.RoomCode, "Participant", nickname, "session cancelled")
-		return nil
-	case err := <-session.errChan:
-		log.Println(room.Status.RoomCode, "Participant", nickname, "session got errChan ", err)
-		return err
-	}
+	return room.SendPeriodicUpdates(ctx, session)
 }
 
 func (ps *PollServer) ParticipantVoteRequest(
@@ -179,23 +137,19 @@ func (ps *PollServer) ParticipantVoteRequest(
 	req *connect.Request[v1.ParticipantVoteEventMessage],
 ) (*connect.Response[v1.ParticipantVoteResponse], error) {
 	roomCode := req.Msg.RoomCode
-	room := ps.Rooms[roomCode]
-	room.mu.Lock()
-	room.Status.Votes = append(
-		room.Status.Votes,
-		req.Msg.Vote)
-	room.mu.Unlock()
-
-	// do we want to immediately inform everyone someone voted,
-	// or wait for tick?
+	room, ok := ps.Rooms[roomCode]
+	if !ok || room == nil {
+		return nil, fmt.Errorf("Room %s not found", roomCode)
+	}
+	room.AddVote(req.Msg.Vote)
 	// do we want to immediately inform everyone voting started,
 	// or wait for tick?
-	hasActive := room.UpdateAllSessions()
-	if !hasActive {
-		fmt.Println(
-			"Tried to UpdateAllSessions with ParticipantVoteResponse but no active connections",
-		)
-	}
+	//hasActive := room.UpdateAllSessions()
+	//if !hasActive {
+	//	fmt.Println(
+	//		"Tried to UpdateAllSessions with ParticipantVoteResponse but no active connections",
+	//	)
+	//}
 
 	return &connect.Response[v1.ParticipantVoteResponse]{
 		Msg: &v1.ParticipantVoteResponse{
@@ -209,30 +163,18 @@ func (ps *PollServer) StartVotingRequest(
 	req *connect.Request[v1.StartVotingEventMessage],
 ) (*connect.Response[v1.StartVotingResponse], error) {
 	roomCode := req.Msg.RoomCode
-	room := ps.Rooms[roomCode]
-	room.mu.Lock()
-	room.Status.VotingStarted = true
-	timeNow := time.Now()
-
-	timestamp := timestamppb.New(timeNow)
-	room.Status.VotingStartTime = timestamp
-
-	seconds := strings.ReplaceAll(room.Status.TimedDuration, "s", "")
-	if d, err := strconv.ParseInt(seconds, 10, 64); err == nil {
-		endTimestamp := timestamppb.Timestamp{
-			Seconds: timestamp.Seconds + d,
-			Nanos:   timestamp.Nanos,
-		}
-		room.Status.VotingEndTime = &endTimestamp
+	room, ok := ps.Rooms[roomCode]
+	if !ok {
+		return nil, fmt.Errorf("Room %s not found", roomCode)
 	}
-	room.mu.Unlock()
+	room.StartVoting()
 
 	// do we want to immediately inform everyone voting started,
 	// or wait for tick?
-	hasActive := room.UpdateAllSessions()
-	if !hasActive {
-		fmt.Println("Tried to UpdateAllSessions with StartVotingRequest but no active connections")
-	}
+	//hasActive := room.UpdateAllSessions()
+	//if !hasActive {
+	// 	fmt.Println("Tried to UpdateAllSessions with StartVotingRequest but no active connections")
+	//}
 
 	return &connect.Response[v1.StartVotingResponse]{
 		Msg: &v1.StartVotingResponse{
@@ -246,14 +188,12 @@ func (ps *PollServer) EndVotingRequest(
 	req *connect.Request[v1.EndVotingEventMessage],
 ) (*connect.Response[v1.EndVotingResponse], error) {
 	roomCode := req.Msg.RoomCode
-	room := ps.Rooms[roomCode]
-	room.mu.Lock()
-	room.Status.VotingClosed = true
-	timeNow := time.Now()
-	timestamp := timestamppb.New(timeNow)
-	room.Status.VotingEndTime = timestamp
-	room.Status.DurationRemaining = "0s"
-	room.mu.Unlock()
+	room, ok := ps.Rooms[roomCode]
+	if !ok {
+		return nil, fmt.Errorf("Room %s not found", roomCode)
+	}
+	fmt.Println("EndVotingRequest received so closing voting")
+	room.CloseVoting()
 
 	// do we want to immediately inform everyone voting ended,
 	// or wait for tick?
@@ -274,6 +214,10 @@ func (ps *PollServer) SubscribeRequest(ctx context.Context,
 	stream *connect.ServerStream[v1.SubscribeResponse],
 ) error {
 	roomCode := req.Msg.RoomCode
+	room, ok := ps.Rooms[roomCode]
+	if !ok {
+		return fmt.Errorf("Room %s not found", roomCode)
+	}
 	nickname := req.Msg.Nickname
 	session := &SubscribeSession{
 		Stream: stream,
@@ -288,18 +232,6 @@ func (ps *PollServer) SubscribeRequest(ctx context.Context,
 			errChan:       make(chan error),
 		},
 	}
-	if nickname != "" {
-		nickname = "Host"
-	}
 
-	fmt.Println("Got SubscribeRequest", roomCode, nickname)
-	log.Printf("Waiting on done or session errors")
-	select {
-	case <-ctx.Done():
-		log.Println(roomCode, nickname, "session cancelled")
-		return nil
-	case err := <-session.errChan:
-		log.Println(roomCode, nickname, "session got errChan ", err)
-		return err
-	}
+	return room.SendPeriodicUpdates(ctx, session)
 }

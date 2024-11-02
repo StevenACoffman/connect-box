@@ -18,4 +18,4 @@ sed -i.bak -e "s/.*baseUrl.*/    baseUrl: dev_base_url,/" ./src/useClient.ts
 rm ./src/useClient.ts.bak
 cd ..
 # build docker image
-#./ko.sh
+./ko.sh

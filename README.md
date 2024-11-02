@@ -27,8 +27,8 @@ You can probably just run:
 ```
 But if you want to globaly install everything, assuming you have go installed, you can do this:
 ```
-npm install --g @bufbuild/buf @bufbuild/protoc-gen-es@1.10.0 @connectrpc/protoc-gen-connect-es@1.6.1
-
+npm install --g @bufbuild/buf @bufbuild/protoc-gen-es@v2.2.2
+export GOBIN=~/khan/webapp/genfiles/go/bin
 go install github.com/bufbuild/buf/cmd/buf@latest
 go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
