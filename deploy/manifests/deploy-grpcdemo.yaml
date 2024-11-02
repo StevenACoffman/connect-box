@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpcdemo
+  namespace: roster-sync
+  labels:
+    app: grpcdemo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpcdemo
+  template:
+    metadata:
+      labels:
+        app: grpcdemo
+    spec:
+      containers:
+      - name: grpcdemo
+        image: us-central1-docker.pkg.dev/khan-academy/districts-jobs/khanmigogo:df98547db0d03dbed7b3d9ac7e5092d52f622d02
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+      - name: envoy
+        image: envoyproxy/envoy:v1.31-latest
+        ports:
+        - containerPort: 8443
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+        volumeMounts:
+        - name: envoy-config
+          mountPath: /etc/envoy/envoy.yaml
+          subPath: envoy.yaml
+        - name: grpc-tls
+          mountPath: /etc/certs
+      volumes:
+      - name: envoy-config
+        configMap:
+          name: envoy-config
+      - name: grpc-tls
+        secret:
+          secretName: grpc-tls

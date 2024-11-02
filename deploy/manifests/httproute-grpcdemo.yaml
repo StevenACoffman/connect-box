@@ -1,0 +1,15 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grpcdemo
+  namespace: roster-sync
+spec:
+  parentRefs:
+  - kind: Gateway
+    name: grpcdemo
+  hostnames:
+          - districts.khanacademy.systems
+  rules:
+  - backendRefs:
+    - name: grpcdemo
+      port: 8443
