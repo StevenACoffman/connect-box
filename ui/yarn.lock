@@ -1147,45 +1147,37 @@
     "@bufbuild/buf-win32-arm64" "1.45.0"
     "@bufbuild/buf-win32-x64" "1.45.0"
 
-"@bufbuild/protobuf@1.10.0", "@bufbuild/protobuf@^1.10.0":
-  version "1.10.0"
-  resolved "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-1.10.0.tgz"
-  integrity sha512-QDdVFLoN93Zjg36NoQPZfsVH9tZew7wKDKyV5qRdj8ntT4wQCOradQjRaTdwMhWUYsgKsvCINKKm87FdEk96Ag==
+"@bufbuild/protobuf@2.2.2", "@bufbuild/protobuf@^2.2.0", "@bufbuild/protobuf@^2.2.2":
+  version "2.2.2"
+  resolved "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-2.2.2.tgz"
+  integrity sha512-UNtPCbrwrenpmrXuRwn9jYpPoweNXj8X5sMvYgsqYyaH8jQ6LfUJSk3dJLnBK+6sfYPrF4iAIo5sd5HQ+tg75A==
 
-"@bufbuild/protoc-gen-es@^1.10.0":
-  version "1.10.0"
-  resolved "https://registry.npmjs.org/@bufbuild/protoc-gen-es/-/protoc-gen-es-1.10.0.tgz"
-  integrity sha512-zBYBsVT/ul4uZb6F+kD7/k4sWNHVVbEPfJwKi0FDr+9VJo8MKIofI6pkr5ksBLr4fi/74r+e/75Xi/0clL5dXg==
+"@bufbuild/protoc-gen-es@^2.2.0":
+  version "2.2.2"
+  resolved "https://registry.npmjs.org/@bufbuild/protoc-gen-es/-/protoc-gen-es-2.2.2.tgz"
+  integrity sha512-dQNfX2c6srAevuT0NR+C5OrNp+dlebIhR2R/GQOhJykCMJB1GB0jBnniSEWC+6YIUGFGLXgSyYbtNPaxZGPM0Q==
   dependencies:
-    "@bufbuild/protobuf" "^1.10.0"
-    "@bufbuild/protoplugin" "1.10.0"
+    "@bufbuild/protobuf" "^2.2.2"
+    "@bufbuild/protoplugin" "2.2.2"
 
-"@bufbuild/protoplugin@1.10.0", "@bufbuild/protoplugin@^1.10.0":
-  version "1.10.0"
-  resolved "https://registry.npmjs.org/@bufbuild/protoplugin/-/protoplugin-1.10.0.tgz"
-  integrity sha512-u6NE4vL0lw1+EK4/PiE/SQB7fKO4LRJNTEScIXVOi2x88K/c8WKc/k0KyEaA0asVBMpwekJQZGnRyj04ZtN5Gg==
+"@bufbuild/protoplugin@2.2.2":
+  version "2.2.2"
+  resolved "https://registry.npmjs.org/@bufbuild/protoplugin/-/protoplugin-2.2.2.tgz"
+  integrity sha512-EKKrjBsA/F2l502PPWfmvx//qRJpOXpyDhwFOYSbwRYfqzEUuuNSb1A+YGE7iDxoEqxwo+len/CJny29iP1ESg==
   dependencies:
-    "@bufbuild/protobuf" "1.10.0"
-    "@typescript/vfs" "^1.4.0"
-    typescript "4.5.2"
+    "@bufbuild/protobuf" "2.2.2"
+    "@typescript/vfs" "^1.5.2"
+    typescript "5.4.5"
 
-"@connectrpc/connect-web@^1.6.1":
-  version "1.6.1"
-  resolved "https://registry.yarnpkg.com/@connectrpc/connect-web/-/connect-web-1.6.1.tgz#71db9e54c8902fc83e4a25736e6e5f96f4941d55"
-  integrity sha512-GVfxQOmt3TtgTaKeXLS/EA2IHa3nHxwe2BCHT7X0Q/0hohM+nP5DDnIItGEjGrGdt3LTTqWqE4s70N4h+qIMlQ==
+"@connectrpc/connect-web@^2.0.0-rc.1":
+  version "2.0.0-rc.2"
+  resolved "https://registry.npmjs.org/@connectrpc/connect-web/-/connect-web-2.0.0-rc.2.tgz"
+  integrity sha512-HMIDXahQtPNcmsLVfHxjKLp4oRz2b89VOCMJpt3zNMd1fzC27Ipf7Wf+7OPmER61xc9mJVkMY0D6XUPw0vB9aQ==
 
-"@connectrpc/connect@^1.6.1":
-  version "1.6.1"
-  resolved "https://registry.yarnpkg.com/@connectrpc/connect/-/connect-1.6.1.tgz#58578c459fed91677bc799d2ce5200d3bd22b07e"
-  integrity sha512-KchMDNtU4CDTdkyf0qG7ugJ6qHTOR/aI7XebYn3OTCNagaDYWiZUVKgRgwH79yeMkpNgvEUaXSK7wKjaBK9b/Q==
-
-"@connectrpc/protoc-gen-connect-es@^1.4.0":
-  version "1.6.1"
-  resolved "https://registry.npmjs.org/@connectrpc/protoc-gen-connect-es/-/protoc-gen-connect-es-1.6.1.tgz"
-  integrity sha512-0fHcaADd+GKM0I/koIQpmKg7b+QL18bXlggTUYEAlMFzsd4zN/ApG3235hdUcRyhrAOAItTXxh8ZAV/nNd43Gg==
-  dependencies:
-    "@bufbuild/protobuf" "^1.10.0"
-    "@bufbuild/protoplugin" "^1.10.0"
+"@connectrpc/connect@^2.0.0-rc.1":
+  version "2.0.0-rc.2"
+  resolved "https://registry.npmjs.org/@connectrpc/connect/-/connect-2.0.0-rc.2.tgz"
+  integrity sha512-EBXUD82U1Z6eWhFu+90ZvuEUCM8K03gV7cGNSQXJ9kDV07dfuvm/LevbzMEsST43Wea6ywYzd2HBNEAPJCxu8g==
 
 "@csstools/normalize.css@*":
   version "12.1.1"
@@ -2593,7 +2585,7 @@
     "@typescript-eslint/types" "5.62.0"
     eslint-visitor-keys "^3.3.0"
 
-"@typescript/vfs@^1.4.0":
+"@typescript/vfs@^1.5.2":
   version "1.6.0"
   resolved "https://registry.npmjs.org/@typescript/vfs/-/vfs-1.6.0.tgz"
   integrity sha512-hvJUjNVeBMp77qPINuUvYXj4FyWeeMMKZkxEATEU3hqBAQ7qdTBCUFT7Sp0Zu0faeEtFf+ldXxMEDr/bk73ISg==
@@ -5314,7 +5306,7 @@ graphemer@^1.4.0:
 
 grpc-web@^1.5.0:
   version "1.5.0"
-  resolved "https://registry.yarnpkg.com/grpc-web/-/grpc-web-1.5.0.tgz#154e4007ab59a94bf7726b87ef6c5bd8815ecf6e"
+  resolved "https://registry.npmjs.org/grpc-web/-/grpc-web-1.5.0.tgz"
   integrity sha512-y1tS3BBIoiVSzKTDF3Hm7E8hV2n7YY7pO0Uo7depfWJqKzWE+SKr0jvHNIJsJJYILQlpYShpi/DRJJMbosgDMQ==
 
 gzip-size@^6.0.0:
@@ -9559,10 +9551,10 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
-typescript@4.5.2:
-  version "4.5.2"
-  resolved "https://registry.npmjs.org/typescript/-/typescript-4.5.2.tgz"
-  integrity sha512-5BlMof9H1yGt0P8/WF+wPNw6GfctgGjXp5hkblpyT+8rkASSmkUKMXrxR0Xg8ThVCi/JnHQiKXeBaEwCeQwMFw==
+typescript@5.4.5:
+  version "5.4.5"
+  resolved "https://registry.npmjs.org/typescript/-/typescript-5.4.5.tgz"
+  integrity sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ==
 
 typescript@^4.9.5:
   version "4.9.5"

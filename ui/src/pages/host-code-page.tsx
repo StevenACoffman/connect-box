@@ -8,7 +8,7 @@ import { DefaultPageWrapper } from "../shared/default-page-wrapper";
 import { PollBattleButton } from "../shared/poll-battle-button";
 import { GameStateContext } from "../game-state-provider";
 import { useClient } from "../useClient";
-import { PollService } from "../proto/server/poll/v1/poll_connect";
+import { PollService } from "../proto/server/poll/v1/poll_pb";
 import { StartVotingEventMessage } from "../proto/server/poll/v1/poll_pb";
 import { useNavigate } from "react-router-dom";
 import { ErrorMessage } from "../shared/error-message";

@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { PollService } from "./proto/server/poll/v1/poll_connect";
+import { PollService } from "./proto/server/poll/v1/poll_pb";
 import { useClient } from "./useClient";
 import { GameStateContext } from "./game-state-provider";
 import {

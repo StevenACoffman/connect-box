@@ -1,7 +1,6 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import JoinPage from "./pages/JoinPage";
-import ChatPage from "./pages/ChatPage";
 import { HomePage } from "./pages/home-page";
 import { PollBattlePage } from "./pages/poll-battle-page";
 import { JoinRoomPage } from "./pages/join-room-page";
@@ -23,7 +22,6 @@ const App: React.FC = () => {
         <PollUpdateProvider>
           <Routes>
             <Route path="/" element={<JoinPage />} />
-            <Route path="/chat" element={<ChatPage />} />
             <Route path="/home" element={<HomePage />} />
             <Route path="/apps/poll-battle" element={<PollBattlePage />} />
             <Route
