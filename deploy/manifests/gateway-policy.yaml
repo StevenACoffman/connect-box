@@ -11,6 +11,8 @@ spec:
     sessionAffinity:
       type: CLIENT_IP
   targetRef:
-    group: "gateway.networking.k8s.io"
+    group: ""
     kind: Service
     name: grpcdemo
+    namespace: grpcdemo
+# NOTE: Namespace is required or it thinks you mean the "default" namespace
