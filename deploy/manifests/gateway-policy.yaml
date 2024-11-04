@@ -1,0 +1,16 @@
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: grpcdemo
+  namespace: grpcdemo
+spec:
+  default:
+    timeoutSec: 1800
+    connectionDraining:
+      drainingTimeoutSec: 1800
+    sessionAffinity:
+      type: CLIENT_IP
+  targetRef:
+    group: "gateway.networking.k8s.io"
+    kind: Service
+    name: grpcdemo
