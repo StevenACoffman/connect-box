@@ -14,10 +14,12 @@ import { PollBattleButton } from "../shared/poll-battle-button";
 import { PollUpdateContext } from "../poll-update-provider";
 import {
   Answer,
-  GameRoomCreateEventMessage,
-  QuestionAndAnswers,
+  GameRoomCreateEventMessage, GameRoomCreateResponse, PollService,
+  QuestionAndAnswers, SubscribeRequestMessage,
 } from "../proto/server/poll/v1/poll_pb";
 import { useNavigate } from "react-router-dom";
+import {useClient} from "../useClient";
+import {ErrorMessage} from "../shared/error-message";
 
 const TIMER_OPTIONS = [
   {
@@ -62,7 +64,8 @@ export const HostSetupPage = () => {
   const [answerOptions, setAnswerOptions] = useState(ANSWER_OPTIONS);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
+  const client = useClient(PollService);
+  const [hasError, setHasError] = useState(false);
   const pollUpdateContext = useContext(PollUpdateContext);
 
   const handleAnswerOptionChange = (value: string, index: number) => {
@@ -104,10 +107,25 @@ export const HostSetupPage = () => {
       TimedDuration: `${timeLimit}s`,
     } as GameRoomCreateEventMessage;
 
-      pollUpdateContext.hostCreateRoom(payload);
-      // Navigate to the waiting room
-      navigate("/apps/poll-battle/host-code");
-      setLoading(false);
+      try {
+        const resp: GameRoomCreateResponse = await client.gameRoomCreateRequest(payload);
+        if (!resp.updateResultsMessage?.RoomCode) {
+            throw new Error("No room code in response");
+        }
+        // Fire off the subscribe request asynchronously, the provider will
+        // update the game state.
+        pollUpdateContext.subscribeRequest({
+            RoomCode: resp.updateResultsMessage?.RoomCode,
+        } as SubscribeRequestMessage);
+        setHasError(false);
+        // Navigate to the waiting room
+        navigate("/apps/poll-battle/host-code");
+      } catch (err){
+        console.log(err);
+        setHasError(true);
+      } finally {
+        setLoading(false);
+      }
   };
 
   const generateButtonDisabled =
@@ -159,6 +177,9 @@ export const HostSetupPage = () => {
           >
             Generate Poll Code
           </PollBattleButton>
+            {hasError && (
+                <ErrorMessage />
+            )}
         </Box>
         <Box sx={styles.rightColumn}>
           <Box>

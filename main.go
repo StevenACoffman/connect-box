@@ -36,7 +36,7 @@ var Version string
 func main() {
 	ctx := context.Background()
 	if err := run(ctx, os.Stdout, os.Args, os.Getenv, Version); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }
@@ -118,7 +118,7 @@ func run(
 func route(log *slog.Logger, version string) http.Handler {
 	pollServer := &server.PollServer{
 		Rooms:       make(map[string]*server.Room),
-		StreamDelay: 1 * time.Second,
+		StreamDelay: 500 * time.Millisecond,
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", StaticHandler)

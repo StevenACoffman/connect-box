@@ -19,4 +19,5 @@ export PATH="$PWD/ui/node_modules/.bin:$PATH"
 ! is_bin_in_path protoc-gen-connect-go && go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
 
 buf build
+buf generate
 echo "Run ./run.sh and then browse on http://localhost:8080"

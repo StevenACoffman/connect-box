@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: envoy-config
-  namespace: grpcdemo
+  namespace: play
 data:
   envoy.yaml: |
     static_resources:

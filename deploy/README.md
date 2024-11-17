@@ -13,49 +13,60 @@ You'll also need working DNS subdomain to point to the load balancer IP.
 
 ## Setup Steps
 
-- Create static IP
+- Create static IP in `khan-academy` GCP Project
   ```shell
-  $ gcloud compute addresses create districts-grpc \
+  $ gcloud compute addresses create districts-play \
     --ip-version=IPV4 \
     --global
+  $ gcloud compute addresses list \
+    --filter="name=( 'districts-play')" --global
   ```
 
 - Point the public DNS to the previously created global IP (I'll be
-  using `districts.khanacademy.systems`)
+  using `play.khanacademy.systems`)
+  ```shell
+  gcloud dns --project=khan-internal-services record-sets transaction start --zone="khanacademy-systems"
+  gcloud dns --project=khan-internal-services record-sets transaction add 35.227.209.195 \
+  --name=play.khanacademy.systems \
+  --ttl=300 \
+  --type=A \
+  --zone=khanacademy-systems
+  gcloud dns --project=khan-internal-services record-sets transaction execute --zone="khanacademy-systems"
+  ```
 
 - Create Fully Qualified Google-managed SSL certificate
 
 ```
-gcloud certificate-manager dns-authorizations create dns-authz-districts-khanacademy-systems \
-     --domain="districts.khanacademy.systems"
+gcloud certificate-manager dns-authorizations create dns-authz-play-khanacademy-systems \
+     --domain="play.khanacademy.systems"
 
-gcloud certificate-manager dns-authorizations describe dns-authz-districts-khanacademy-systems
+gcloud certificate-manager dns-authorizations describe dns-authz-play-khanacademy-systems
  
 gcloud config set project khan-internal-services
  
-gcloud dns record-sets transaction start --zone="khanacademy-systems"
-gcloud dns record-sets transaction add 'XXXXX.authorize.certificatemanager.goog.' \
-    --name="_acme-challenge.districts.khanacademy.systems." \
+gcloud dns --project=khan-internal-services record-sets transaction start --zone="khanacademy-systems"
+gcloud dns --project=khan-internal-services record-sets transaction add 'XXXXX.X.authorize.certificatemanager.goog.' \
+    --name="_acme-challenge.play.khanacademy.systems." \
     --ttl="30" \
     --type="CNAME" \
     --zone="khanacademy-systems"
 
-gcloud dns record-sets transaction execute --zone="khanacademy-systems"
+gcloud dns --project=khan-internal-services record-sets transaction execute --zone="khanacademy-systems"
 
 gcloud config set project khan-academy
 
-gcloud certificate-manager certificates create districts-devadmin-ssl \
-     --domains="districts.khanacademy.systems" \
-     --dns-authorizations=dns-authz-districts-khanacademy-systems
+gcloud certificate-manager certificates create districts-play-devadmin-ssl \
+     --domains="play.khanacademy.systems" \
+     --dns-authorizations=dns-authz-play-khanacademy-systems
 
-gcloud certificate-manager maps create districts-devadmin-ssl-map
+gcloud certificate-manager maps create districts-play-devadmin-ssl-map
 
-gcloud certificate-manager maps entries create districts-devadmin-ssl-map-entry \
-    --map=districts-devadmin-ssl-map \
-    --hostname=districts.khanacademy.systems \
-    --certificates=districts-devadmin-ssl
+gcloud certificate-manager maps entries create districts-play-devadmin-ssl-map-entry \
+    --map=districts-play-devadmin-ssl-map \
+    --hostname=play.khanacademy.systems \
+    --certificates=districts-play-devadmin-ssl
     
-gcloud certificate-manager maps entries list --map districts-devadmin-ssl-map
+gcloud certificate-manager maps entries list --map districts-play-devadmin-ssl-map
 ```
 
 - Generate self-signed certificate for the backend
@@ -68,65 +79,61 @@ gcloud certificate-manager maps entries list --map districts-devadmin-ssl-map
   **Important:** The certificate has to use one of supported signatures
   compatible with BoringSSL, see [^3][^4] for more details. 
 
+- Create the K8S namespace
+  ```shell
+  $ kubectl create namespace play
+  ```
 - Create K8S Secret with the self-signed cert
   ```shell
-  $ kubectl -n grpcdemo create secret tls grpc-tls \
+  $ kubectl -n play create secret tls play-tls \
   --cert=cert.pem \
   --key=key.pem
   ```
 
 - Create K8S Configmap with Envoy config
   ```shell
-  $ kubectl -n grpcdemo create configmap envoy-config --from-file=envoy.yaml
+  $ kubectl -n play apply -f manifests/configmap-envoy.yaml
+  # this is same as:
+  # kubectl -n play create configmap envoy-config --from-file=envoy.yaml
   ```
 
-- Deploy _grpcdemo_ app
+- Deploy _play_ app
   ```shell
-  $ kubectl -n grpcdemo apply -f manifests/deploy-grpcdemo.yaml
+  $ kubectl -n play apply -f manifests/deploy-play.yaml
   ```
 
   We're using the *Cloud Run gRPC Server Streaming sample application*[^5] which listens on port 8080.
   The Envoy then listens on port 8443 with self-signed certificate.
 
-- Deploy _grpcdemo_ svc
+- Deploy _play_ svc
   ```shell
-  $ kubectl -n grpcdemo apply -f manifests/svc-grpcdemo.yaml
+  $ kubectl -n play apply -f manifests/svc-play.yaml
   ```
 
-- Deploy _grpcdemo_ *gke-l7-gxlb* gateway
+- Deploy Gateway Policy
   ```shell
-  $ kubectl -n grpcdemo apply -f manifests/gateway-grpcdemo.yaml
+  $ kubectl -n play apply -f manifests/gateway-policy.yaml
   ```
 
-- Deploy _grpcdemo_ HealthCheckPolicy
+- Deploy _play_ *gke-l7-gxlb* gateway
   ```shell
-  $ kubectl -n grpcdemo apply -f manifests/httproute-health.yaml
+  $ kubectl -n play apply -f manifests/gateway-play.yaml
   ```
 
-- Deploy _grpcdemo_ HTTPRoute
+- Deploy _play_ HealthCheckPolicy
   ```shell
-  $ kubectl -n grpcdemo apply -f manifests/httproute-grpcdemo.yaml
+  $ kubectl -n play apply -f manifests/httproute-health-play.yaml
+  ```
+
+- Deploy _play_ HTTPRoute
+  ```shell
+  $ kubectl -n play apply -f manifests/httproute-play.yaml
   ```
   *Don't forget to change the DNS in the manifest.*
 
 - Test
+  Go to https://play.khanacademy.systems and verify it works!
 
-  Clone the repository [^5] and build the client:
-  ```shell
-  $ git clone https://github.com/GoogleCloudPlatform/golang-samples
-  $ cd golang-samples/run/grpc-server-streaming
-  $ go build -o cli ./client
-  ```
-
-  And run the client:
-  ```shell
-  $ ./cli -server districts.khanacademy.systems:443
-  rpc established to timeserver, starting to stream
-  received message: current_timestamp: 2023-10-24T19:15:32Z
-  received message: current_timestamp: 2023-10-24T19:15:33Z
-  received message: current_timestamp: 2023-10-24T19:15:34Z
-  ...
-  ```
 Other Envoy config examples are available in [^6].
 
 [^1]: https://cloud.google.com/kubernetes-engine/docs/concepts/gateway-api

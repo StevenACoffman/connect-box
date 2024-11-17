@@ -1,8 +1,8 @@
 apiVersion: networking.gke.io/v1
 kind: GCPBackendPolicy
 metadata:
-  name: grpcdemo
-  namespace: grpcdemo
+  name: play
+  namespace: play
 spec:
   default:
     timeoutSec: 1800
@@ -13,6 +13,6 @@ spec:
   targetRef:
     group: ""
     kind: Service
-    name: grpcdemo
-    namespace: grpcdemo
+    name: play
+    namespace: play
 # NOTE: Namespace is required or it thinks you mean the "default" namespace

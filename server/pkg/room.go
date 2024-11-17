@@ -58,6 +58,12 @@ func (r *Room) RoomTicker(ctx context.Context) {
 	}
 }
 
+func (r *Room) AddCancel(cancelFn context.CancelCauseFunc) {
+	r.mu.Lock()
+	r.Cancel = cancelFn
+	r.mu.Unlock()
+}
+
 func (r *Room) DecrementRemainingTime() {
 	r.mu.Lock()
 	timeNow := time.Now()
@@ -212,23 +218,33 @@ func (r *Room) AddVote(vote *v1.Vote) {
 	r.mu.Unlock()
 }
 
-func (room *Room) JoinRoom(
-	session *UserSession,
-	nickname string,
-	isParticipant bool,
-	isAudience bool,
-) {
+func (room *Room) JoinRoom(nickname string, isParticipant bool, isAudience bool) {
 	room.mu.Lock()
-	room.Sessions = append(room.Sessions, session)
-	fmt.Println("RoomUserSessionLen:", len(room.Sessions))
 	if isParticipant {
 		participants := room.Status.Participants
 		participants = append(participants, nickname)
-		fmt.Println("for room:", room.Status.RoomCode, "new participants:", participants)
+		fmt.Println("for room:", room.Status.RoomCode, "new participant:", nickname)
 		room.Status.Participants = participants
 	} else if isAudience {
+		fmt.Println("for room:", room.Status.RoomCode, "new audience:", nickname)
 		room.Status.AudienceList = append(
 			room.Status.AudienceList, nickname)
+	} else { // host
+		fmt.Println("for room:", room.Status.RoomCode, "new host?")
+	}
+	room.mu.Unlock()
+}
+
+func (room *Room) SubscribeRoom(session *SubscribeSession, nickname string, isParticipant bool, isAudience bool, isHost bool) {
+	room.mu.Lock()
+	room.Sessions = append(room.Sessions, session)
+	fmt.Println("JoinRoom RoomUserSessionLen:", len(room.Sessions))
+	if isParticipant {
+		fmt.Println("for room:", room.Status.RoomCode, "subscribe participant:", nickname)
+	} else if isAudience {
+		fmt.Println("for room:", room.Status.RoomCode, "subscribe audience:", nickname)
+	} else { // host
+		fmt.Println("for room:", room.Status.RoomCode, "subscribe host")
 	}
 	room.mu.Unlock()
 }

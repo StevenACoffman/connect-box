@@ -24,16 +24,11 @@ type PollServer struct {
 func (ps *PollServer) GameRoomCreateRequest(
 	ctx context.Context,
 	req *connect.Request[v1.GameRoomCreateEventMessage],
-	stream *connect.ServerStream[v1.GameRoomCreateResponse],
-) error {
+) (*connect.Response[v1.GameRoomCreateResponse], error) {
 	fmt.Println("Got GameRoomCreateRequest", jsonify(req.Msg))
 	fmt.Println(ctx.Deadline())
 	// TODO(steve): Randomly generate but avoid collisions
 	roomCode := IntToLetters(getRandRoomNumber())
-	cancellableCtx, cancelFn := context.WithCancelCause(ctx)
-	if ps.StreamDelay <= 0 {
-		return fmt.Errorf("StreamDelay must be > 0")
-	}
 	fmt.Println("RoomCode", roomCode)
 	// check if room is already occupied
 	for {
@@ -46,17 +41,6 @@ func (ps *PollServer) GameRoomCreateRequest(
 		// well, let's try another
 		roomCode = IntToLetters(getRandRoomNumber())
 		// loop around again
-	}
-
-	session := &HostSession{
-		Stream: stream,
-		CommonSession: CommonSession{
-			RoomCode: roomCode,
-			Game:     req.Msg.Game,
-			IsHost:   true,
-			IsActive: true,
-			errChan:  make(chan error),
-		},
 	}
 
 	ps.mu.Lock()
@@ -75,16 +59,19 @@ func (ps *PollServer) GameRoomCreateRequest(
 			TimedDuration:       req.Msg.TimedDuration,
 			DurationRemaining:   req.Msg.TimedDuration,
 		},
-		Cancel:      cancelFn,
-		Sessions:    []StreamSender{session},
+		Sessions:    []StreamSender{},
 		StreamDelay: time.Duration(ps.StreamDelay),
 	}
 	ps.mu.Unlock()
 	log.Printf("Starting room ticker for %v\n", roomCode)
 	room := ps.Rooms[roomCode]
-	go room.RoomTicker(cancellableCtx)
 	log.Printf("Sending periodic message to Host from %v\n", roomCode)
-	return room.SendPeriodicUpdates(cancellableCtx, session)
+	//return room.SendPeriodicUpdates(cancellableCtx, session)
+	return &connect.Response[v1.GameRoomCreateResponse]{
+		Msg: &v1.GameRoomCreateResponse{
+			UpdateResultsMessage: room.Status,
+		},
+	}, nil
 }
 
 // jsonify just makes indented json out of anything
@@ -99,37 +86,21 @@ func jsonify(v any) string {
 func (ps *PollServer) ParticipantAudienceJoinRequest(
 	ctx context.Context,
 	req *connect.Request[v1.ParticipantAudienceJoinEventMessage],
-	stream *connect.ServerStream[v1.ParticipantAudienceJoinResponse],
-) error {
+) (*connect.Response[v1.ParticipantAudienceJoinResponse], error) {
 	nickname := req.Msg.Nickname
 	roomCode := req.Msg.RoomCode
 	fmt.Println("Got ParticipantAudienceJoinRequest", roomCode, nickname)
 
 	room, ok := ps.Rooms[roomCode]
 	if !ok {
-		return fmt.Errorf("room %s not in use so can't join it", roomCode)
+		return nil, fmt.Errorf("room %s not in use so can't join it", roomCode)
 	}
-	isParticipant := req.Msg.Participant
-	isAudience := req.Msg.Audience
-	session := &UserSession{
-		Stream: stream,
-		CommonSession: CommonSession{
-			NickName:      nickname,
-			RoomCode:      roomCode,
-			Game:          room.Status.Game,
-			IsAudience:    isAudience,
-			IsParticipant: isParticipant,
-			IsHost:        false,
-			IsActive:      true,
-			errChan:       make(chan error),
+	room.JoinRoom(nickname, req.Msg.Participant, req.Msg.Audience)
+	return &connect.Response[v1.ParticipantAudienceJoinResponse]{
+		Msg: &v1.ParticipantAudienceJoinResponse{
+			UpdateResultsMessage: room.Status,
 		},
-	}
-	fmt.Println("Session:\n" + jsonify(session.CommonSession))
-
-	room.JoinRoom(session, nickname, isParticipant, isAudience)
-	log.Printf("User %s joined room %s\n", session.NickName, roomCode)
-
-	return room.SendPeriodicUpdates(ctx, session)
+	}, nil
 }
 
 func (ps *PollServer) ParticipantVoteRequest(
@@ -219,18 +190,28 @@ func (ps *PollServer) SubscribeRequest(ctx context.Context,
 		return fmt.Errorf("Room %s not found", roomCode)
 	}
 	nickname := req.Msg.Nickname
+	isHost := nickname == ""
 	session := &SubscribeSession{
 		Stream: stream,
 		CommonSession: CommonSession{
 			RoomCode:      roomCode,
 			Game:          req.Msg.Game,
 			NickName:      nickname,
-			IsHost:        nickname == "",
+			IsHost:        isHost,
 			IsParticipant: req.Msg.Participant,
 			IsAudience:    req.Msg.Audience,
 			IsActive:      true,
 			errChan:       make(chan error),
 		},
+	}
+	fmt.Println("Subscribing session", jsonify(session.CommonSession))
+
+	room.SubscribeRoom(session, nickname, req.Msg.Participant, req.Msg.Audience, isHost)
+
+	if isHost {
+		cancellableCtx, cancelFn := context.WithCancelCause(ctx)
+		room.AddCancel(cancelFn)
+		go room.RoomTicker(cancellableCtx)
 	}
 
 	return room.SendPeriodicUpdates(ctx, session)

@@ -29,16 +29,6 @@ type CommonSession struct {
 	errChan       chan error
 }
 
-type UserSession struct {
-	Stream *connect.ServerStream[v1.ParticipantAudienceJoinResponse]
-	CommonSession
-}
-
-type HostSession struct {
-	Stream *connect.ServerStream[v1.GameRoomCreateResponse]
-	CommonSession
-}
-
 type SubscribeSession struct {
 	Stream *connect.ServerStream[v1.SubscribeResponse]
 	CommonSession
@@ -63,50 +53,6 @@ func (session *CommonSession) End(err error) {
 	session.IsActive = false
 	// blocks until next session tick!
 	session.errChan <- err
-}
-
-func (session *HostSession) StreamSend(currentResults *v1.UpdateResultsMessage) error {
-	fmt.Println("Host StreamSend", session.RoomCode, session.GetNickName())
-	var err error
-	// this is a standard panic recover.
-	// Recover can only be called in a deferred function.
-	defer func() {
-		if r := recover(); r != nil {
-			err = PanicRecoverHandler(r)
-		}
-	}()
-	err = session.Stream.Send(
-		&v1.GameRoomCreateResponse{
-			UpdateResultsMessage: currentResults,
-		},
-	)
-
-	return err
-}
-
-func (session *HostSession) Sendable() bool {
-	return session.IsActive && session.Stream != nil
-}
-
-func (session *UserSession) StreamSend(currentResults *v1.UpdateResultsMessage) error {
-	fmt.Println("User StreamSend", session.RoomCode, session.GetNickName())
-	err := session.Stream.Send(
-		&v1.ParticipantAudienceJoinResponse{
-			UpdateResultsMessage: currentResults,
-		},
-	)
-	// this is a standard panic recover.
-	// Recover can only be called in a deferred function.
-	defer func() {
-		if r := recover(); r != nil {
-			err = PanicRecoverHandler(r)
-		}
-	}()
-	return err
-}
-
-func (session *UserSession) Sendable() bool {
-	return session.IsActive && session.Stream != nil
 }
 
 func (session *SubscribeSession) StreamSend(currentResults *v1.UpdateResultsMessage) error {

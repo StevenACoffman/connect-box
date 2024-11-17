@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: grpcdemo
-  namespace: grpcdemo
+  name: play
+  namespace: play
   labels:
-    app: grpcdemo
+    app: play
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: grpcdemo
+      app: play
   template:
     metadata:
       labels:
-        app: grpcdemo
+        app: play
     spec:
       containers:
-      - name: grpcdemo
-        image: us-central1-docker.pkg.dev/khan-academy/districts-jobs/khanmigogo:df98547db0d03dbed7b3d9ac7e5092d52f622d02
+      - name: play
+        image: us-central1-docker.pkg.dev/khan-academy/districts-jobs/khanmigogo:3098c3194989f6ba46e156934825ddfb91bd756c
         ports:
         - containerPort: 8080
         resources:
@@ -42,12 +42,12 @@ spec:
         - name: envoy-config
           mountPath: /etc/envoy/envoy.yaml
           subPath: envoy.yaml
-        - name: grpc-tls
+        - name: play-tls
           mountPath: /etc/certs
       volumes:
       - name: envoy-config
         configMap:
           name: envoy-config
-      - name: grpc-tls
+      - name: play-tls
         secret:
-          secretName: grpc-tls
+          secretName: play-tls

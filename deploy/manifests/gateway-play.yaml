@@ -1,10 +1,10 @@
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: grpcdemo
-  namespace: grpcdemo
+  name: play
+  namespace: play
   annotations:
-    networking.gke.io/certmap: districts-devadmin-ssl-map
+    networking.gke.io/certmap: districts-play-devadmin-ssl-map
 spec:
   gatewayClassName: gke-l7-gxlb
   listeners:
@@ -13,4 +13,4 @@ spec:
     port: 443
   addresses:
   - type: NamedAddress
-    value: districts-grpc
+    value: districts-play

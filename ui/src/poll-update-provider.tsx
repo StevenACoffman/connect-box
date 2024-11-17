@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { PollService } from "./proto/server/poll/v1/poll_pb";
+import {PollService, SubscribeRequestMessage} from "./proto/server/poll/v1/poll_pb";
 import { useClient } from "./useClient";
 import { GameStateContext } from "./game-state-provider";
 import {
@@ -9,8 +9,7 @@ import {
 } from "./proto/server/poll/v1/poll_pb";
 
 export const PollUpdateContext = createContext({
-  hostCreateRoom: async (event: GameRoomCreateEventMessage) => {},
-  participantJoinRoom: async (event: ParticipantAudienceJoinEventMessage) => {},
+  subscribeRequest: async (event: SubscribeRequestMessage) => {},
 });
 
 type Props = {
@@ -21,32 +20,16 @@ export const PollUpdateProvider = ({ children }: Props) => {
   const client = useClient(PollService);
   const { setGameState } = useContext(GameStateContext);
 
-  const hostCreateRoom = async (event: GameRoomCreateEventMessage) => {
-    const stream = client.gameRoomCreateRequest(event);
-    console.log({ stream });
+  const subscribeRequest = async (event: SubscribeRequestMessage) => {
+    const stream = client.subscribeRequest(event);
     for await (const response of stream) {
-      console.log({ response });
+      console.log(response);
       setGameState(response.updateResultsMessage as UpdateResultsMessage);
     }
   };
 
-  const participantJoinRoom = async (
-    event: ParticipantAudienceJoinEventMessage
-  ) => {
-    const stream = client.participantAudienceJoinRequest(event);
-    for await (const response of stream) {
-      console.log(response);
-        setGameState(response.updateResultsMessage as UpdateResultsMessage);
-    }
-  };
-
   return (
-    <PollUpdateContext.Provider
-      value={{
-        hostCreateRoom,
-        participantJoinRoom,
-      }}
-    >
+    <PollUpdateContext.Provider value={{subscribeRequest}}>
       {children}
     </PollUpdateContext.Provider>
   );

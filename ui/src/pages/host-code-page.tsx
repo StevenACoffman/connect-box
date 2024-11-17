@@ -90,11 +90,11 @@ export const HostCodePage = () => {
         <Box sx={styles.shareAndStart}>
           <Button
             onClick={() =>
-              handleCopy("Copied link!", "https://districts.khanacademy.systems/apps/poll-battle/join-room" + code)
+              handleCopy("Copied link!", "https://play.khanacademy.systems/apps/poll-battle/join-room" + code)
             }
             sx={styles.linkButton}
           >
-            districts.khanacademy.systems
+            play.khanacademy.systems
           </Button>
           <Spacer />
           <Button

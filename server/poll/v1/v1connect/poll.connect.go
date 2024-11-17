@@ -66,9 +66,9 @@ var (
 
 // PollServiceClient is a client for the server.poll.v1.PollService service.
 type PollServiceClient interface {
-	ParticipantAudienceJoinRequest(context.Context, *connect.Request[v1.ParticipantAudienceJoinEventMessage]) (*connect.ServerStreamForClient[v1.ParticipantAudienceJoinResponse], error)
+	ParticipantAudienceJoinRequest(context.Context, *connect.Request[v1.ParticipantAudienceJoinEventMessage]) (*connect.Response[v1.ParticipantAudienceJoinResponse], error)
 	ParticipantVoteRequest(context.Context, *connect.Request[v1.ParticipantVoteEventMessage]) (*connect.Response[v1.ParticipantVoteResponse], error)
-	GameRoomCreateRequest(context.Context, *connect.Request[v1.GameRoomCreateEventMessage]) (*connect.ServerStreamForClient[v1.GameRoomCreateResponse], error)
+	GameRoomCreateRequest(context.Context, *connect.Request[v1.GameRoomCreateEventMessage]) (*connect.Response[v1.GameRoomCreateResponse], error)
 	StartVotingRequest(context.Context, *connect.Request[v1.StartVotingEventMessage]) (*connect.Response[v1.StartVotingResponse], error)
 	EndVotingRequest(context.Context, *connect.Request[v1.EndVotingEventMessage]) (*connect.Response[v1.EndVotingResponse], error)
 	SubscribeRequest(context.Context, *connect.Request[v1.SubscribeRequestMessage]) (*connect.ServerStreamForClient[v1.SubscribeResponse], error)
@@ -134,8 +134,8 @@ type pollServiceClient struct {
 }
 
 // ParticipantAudienceJoinRequest calls server.poll.v1.PollService.ParticipantAudienceJoinRequest.
-func (c *pollServiceClient) ParticipantAudienceJoinRequest(ctx context.Context, req *connect.Request[v1.ParticipantAudienceJoinEventMessage]) (*connect.ServerStreamForClient[v1.ParticipantAudienceJoinResponse], error) {
-	return c.participantAudienceJoinRequest.CallServerStream(ctx, req)
+func (c *pollServiceClient) ParticipantAudienceJoinRequest(ctx context.Context, req *connect.Request[v1.ParticipantAudienceJoinEventMessage]) (*connect.Response[v1.ParticipantAudienceJoinResponse], error) {
+	return c.participantAudienceJoinRequest.CallUnary(ctx, req)
 }
 
 // ParticipantVoteRequest calls server.poll.v1.PollService.ParticipantVoteRequest.
@@ -144,8 +144,8 @@ func (c *pollServiceClient) ParticipantVoteRequest(ctx context.Context, req *con
 }
 
 // GameRoomCreateRequest calls server.poll.v1.PollService.GameRoomCreateRequest.
-func (c *pollServiceClient) GameRoomCreateRequest(ctx context.Context, req *connect.Request[v1.GameRoomCreateEventMessage]) (*connect.ServerStreamForClient[v1.GameRoomCreateResponse], error) {
-	return c.gameRoomCreateRequest.CallServerStream(ctx, req)
+func (c *pollServiceClient) GameRoomCreateRequest(ctx context.Context, req *connect.Request[v1.GameRoomCreateEventMessage]) (*connect.Response[v1.GameRoomCreateResponse], error) {
+	return c.gameRoomCreateRequest.CallUnary(ctx, req)
 }
 
 // StartVotingRequest calls server.poll.v1.PollService.StartVotingRequest.
@@ -165,9 +165,9 @@ func (c *pollServiceClient) SubscribeRequest(ctx context.Context, req *connect.R
 
 // PollServiceHandler is an implementation of the server.poll.v1.PollService service.
 type PollServiceHandler interface {
-	ParticipantAudienceJoinRequest(context.Context, *connect.Request[v1.ParticipantAudienceJoinEventMessage], *connect.ServerStream[v1.ParticipantAudienceJoinResponse]) error
+	ParticipantAudienceJoinRequest(context.Context, *connect.Request[v1.ParticipantAudienceJoinEventMessage]) (*connect.Response[v1.ParticipantAudienceJoinResponse], error)
 	ParticipantVoteRequest(context.Context, *connect.Request[v1.ParticipantVoteEventMessage]) (*connect.Response[v1.ParticipantVoteResponse], error)
-	GameRoomCreateRequest(context.Context, *connect.Request[v1.GameRoomCreateEventMessage], *connect.ServerStream[v1.GameRoomCreateResponse]) error
+	GameRoomCreateRequest(context.Context, *connect.Request[v1.GameRoomCreateEventMessage]) (*connect.Response[v1.GameRoomCreateResponse], error)
 	StartVotingRequest(context.Context, *connect.Request[v1.StartVotingEventMessage]) (*connect.Response[v1.StartVotingResponse], error)
 	EndVotingRequest(context.Context, *connect.Request[v1.EndVotingEventMessage]) (*connect.Response[v1.EndVotingResponse], error)
 	SubscribeRequest(context.Context, *connect.Request[v1.SubscribeRequestMessage], *connect.ServerStream[v1.SubscribeResponse]) error
@@ -179,7 +179,7 @@ type PollServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewPollServiceHandler(svc PollServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	pollServiceParticipantAudienceJoinRequestHandler := connect.NewServerStreamHandler(
+	pollServiceParticipantAudienceJoinRequestHandler := connect.NewUnaryHandler(
 		PollServiceParticipantAudienceJoinRequestProcedure,
 		svc.ParticipantAudienceJoinRequest,
 		connect.WithSchema(pollServiceParticipantAudienceJoinRequestMethodDescriptor),
@@ -191,7 +191,7 @@ func NewPollServiceHandler(svc PollServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(pollServiceParticipantVoteRequestMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	pollServiceGameRoomCreateRequestHandler := connect.NewServerStreamHandler(
+	pollServiceGameRoomCreateRequestHandler := connect.NewUnaryHandler(
 		PollServiceGameRoomCreateRequestProcedure,
 		svc.GameRoomCreateRequest,
 		connect.WithSchema(pollServiceGameRoomCreateRequestMethodDescriptor),
@@ -238,16 +238,16 @@ func NewPollServiceHandler(svc PollServiceHandler, opts ...connect.HandlerOption
 // UnimplementedPollServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedPollServiceHandler struct{}
 
-func (UnimplementedPollServiceHandler) ParticipantAudienceJoinRequest(context.Context, *connect.Request[v1.ParticipantAudienceJoinEventMessage], *connect.ServerStream[v1.ParticipantAudienceJoinResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("server.poll.v1.PollService.ParticipantAudienceJoinRequest is not implemented"))
+func (UnimplementedPollServiceHandler) ParticipantAudienceJoinRequest(context.Context, *connect.Request[v1.ParticipantAudienceJoinEventMessage]) (*connect.Response[v1.ParticipantAudienceJoinResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("server.poll.v1.PollService.ParticipantAudienceJoinRequest is not implemented"))
 }
 
 func (UnimplementedPollServiceHandler) ParticipantVoteRequest(context.Context, *connect.Request[v1.ParticipantVoteEventMessage]) (*connect.Response[v1.ParticipantVoteResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("server.poll.v1.PollService.ParticipantVoteRequest is not implemented"))
 }
 
-func (UnimplementedPollServiceHandler) GameRoomCreateRequest(context.Context, *connect.Request[v1.GameRoomCreateEventMessage], *connect.ServerStream[v1.GameRoomCreateResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("server.poll.v1.PollService.GameRoomCreateRequest is not implemented"))
+func (UnimplementedPollServiceHandler) GameRoomCreateRequest(context.Context, *connect.Request[v1.GameRoomCreateEventMessage]) (*connect.Response[v1.GameRoomCreateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("server.poll.v1.PollService.GameRoomCreateRequest is not implemented"))
 }
 
 func (UnimplementedPollServiceHandler) StartVotingRequest(context.Context, *connect.Request[v1.StartVotingEventMessage]) (*connect.Response[v1.StartVotingResponse], error) {

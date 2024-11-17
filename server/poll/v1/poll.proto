@@ -117,9 +117,9 @@ message SubscribeResponse {
 }
 
 service PollService {
-  rpc ParticipantAudienceJoinRequest(ParticipantAudienceJoinEventMessage) returns (stream ParticipantAudienceJoinResponse);
+  rpc ParticipantAudienceJoinRequest(ParticipantAudienceJoinEventMessage) returns (ParticipantAudienceJoinResponse);
   rpc ParticipantVoteRequest(ParticipantVoteEventMessage) returns (ParticipantVoteResponse);
-  rpc GameRoomCreateRequest(GameRoomCreateEventMessage) returns (stream GameRoomCreateResponse);
+  rpc GameRoomCreateRequest(GameRoomCreateEventMessage) returns (GameRoomCreateResponse);
   rpc StartVotingRequest(StartVotingEventMessage) returns (StartVotingResponse);
   rpc EndVotingRequest(EndVotingEventMessage) returns (EndVotingResponse);
   rpc SubscribeRequest(SubscribeRequestMessage) returns (stream SubscribeResponse);
