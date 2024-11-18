@@ -12,3 +12,4 @@ spec:
     protocol: TCP
     targetPort: 8443
     appProtocol: HTTP2
+    # appProtocol: kubernetes.io/h2c

@@ -4,6 +4,8 @@ Steps to deploy gRPC server streaming service running on GKE behind Google's
 Global External Application Load Balancer using the Gateway API, Google-managed
 certificate and Envoy proxy for TLS termination at the backends.
 
+Adapted from https://github.com/stepanstipl/gke-grpc-gateway-api and https://github.com/GoogleCloudPlatform/kubernetes-engine-samples/tree/main/networking/grpc-gke-nlb-tutorial
+
 ## Prerequisites
 
 These steps expect GKE cluster with a Gateway Controller [^1] and internet
@@ -32,6 +34,10 @@ You'll also need working DNS subdomain to point to the load balancer IP.
   --type=A \
   --zone=khanacademy-systems
   gcloud dns --project=khan-internal-services record-sets transaction execute --zone="khanacademy-systems"
+  ```
+- Speed up stuff with a SVCB (HTTPS) record:
+  ```shell
+  gcloud dns --project=khan-internal-services record-sets create play.khanacademy.systems. --zone="khanacademy-systems" --type="HTTPS" --ttl="300" --rrdatas="1 . alpn=h2,h3 ipv4hint=35.227.209.195"
   ```
 
 - Create Fully Qualified Google-managed SSL certificate
