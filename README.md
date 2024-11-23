@@ -2,6 +2,8 @@
 
 Real Time Collaboration Games... with gRPC and HTTP/2 or HTTP/3!
 
+Check out a live demo at [https://play.khanacademy.systems/](https://play.khanacademy.systems/) !
+
 This is a GameHub for a number of Jackbox-style collaborative realtime games.
 Right now, only poll Battle works, but it shouldn't be too hard to add more.
 
